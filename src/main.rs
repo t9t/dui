@@ -135,14 +135,6 @@ impl WithFormatBytes for u64 {
     }
 }
 
-fn count_total(i: &Item) -> u64 {
-    let mut total = i.size;
-    for sub in &i.items {
-        total += count_total(&sub);
-    }
-    return total;
-}
-
 fn walk(p: &Path) -> Result<Item, Error> {
     let m = fs::symlink_metadata(p)?;
     let os_name: OsString = p.file_name().map(|s| s.into()).unwrap_or_default();
