@@ -1,4 +1,4 @@
-use std::{env, ffi::OsString, fs, io::Error, path::Path};
+use std::{env, ffi::OsString, fs, io::Error, os::unix::fs::MetadataExt, path::Path};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -10,7 +10,7 @@ fn main() {
     println!("Crawling {}", path);
     let r = walk(Path::new(&path)).unwrap();
     println!(
-        "Total: {} ({} MB; {} MiB); size: {}",
+        "{} ({} MB; {} MiB); size: {}",
         r.total,
         r.total as f64 / 1_000_000.0,
         r.total as f64 / 1024.0 / 1024.0,
@@ -19,13 +19,14 @@ fn main() {
 }
 
 fn walk(p: &Path) -> Result<Item, Error> {
-    let m = fs::metadata(p)?;
+    let m = fs::symlink_metadata(p)?;
     let name: OsString = p.file_name().map(|s| s.into()).unwrap_or_default();
     let size = m.len();
     if !m.is_dir() {
+        //println!("file {} {:?}", size, name);
         return Ok(Item {
             name,
-            size,
+            size: m.size(),
             total: size,
             items: Vec::new(),
         });
@@ -41,6 +42,7 @@ fn walk(p: &Path) -> Result<Item, Error> {
                 total += item.total;
                 items.push(item);
             }
+            //println!("{} {:?}", total, p);
             return Ok(Item {
                 name,
                 size,
