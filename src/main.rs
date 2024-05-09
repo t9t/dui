@@ -1,4 +1,6 @@
-use std::{env, ffi::OsString, fs, io::Error, os::unix::fs::MetadataExt, path::Path};
+use std::{
+    env, ffi::OsString, fs, io::Error, os::unix::fs::MetadataExt, path::Path, time::SystemTime,
+};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -7,15 +9,30 @@ fn main() {
     }
     let path = &args[1];
 
+    let crawling_start = SystemTime::now();
     println!("Crawling {}", path);
     let r = walk(Path::new(&path)).unwrap();
     println!(
-        "{} ({} MB; {} MiB); size: {}",
+        "{} ({} MB; {} MiB); size: {} (took {:?})",
         r.total,
         r.total as f64 / 1_000_000.0,
         r.total as f64 / 1024.0 / 1024.0,
-        r.size
+        r.size,
+        SystemTime::now().duration_since(crawling_start).unwrap(),
     );
+    let count_start = SystemTime::now();
+    let ct = count_total(&r);
+    let count_duration = SystemTime::now().duration_since(count_start).unwrap();
+
+    println!("{} counted total (took {:?})", ct, count_duration);
+}
+
+fn count_total(i: &Item) -> u64 {
+    let mut total = i.size;
+    for sub in &i.items {
+        total += count_total(&sub);
+    }
+    return total;
 }
 
 fn walk(p: &Path) -> Result<Item, Error> {
@@ -26,7 +43,7 @@ fn walk(p: &Path) -> Result<Item, Error> {
         //println!("file {} {:?}", size, name);
         return Ok(Item {
             name,
-            size: m.size(),
+            size,
             total: size,
             items: Vec::new(),
         });
@@ -38,14 +55,21 @@ fn walk(p: &Path) -> Result<Item, Error> {
             for entry in entries {
                 let e = entry?;
                 let pp = e.path();
-                let item = walk(&pp)?;
-                total += item.total;
-                items.push(item);
+                let item = walk(&pp);
+                match item {
+                    Ok(i) => {
+                        total += i.total;
+                        items.push(i);
+                    }
+                    Err(err) => {
+                        eprintln!("err {:?}: {}", pp, err)
+                    }
+                }
             }
             //println!("{} {:?}", total, p);
             return Ok(Item {
                 name,
-                size,
+                size: 0, // TODO: size,
                 total,
                 items,
             });
