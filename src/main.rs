@@ -17,9 +17,18 @@ fn main() {
     let crawling_start = Instant::now();
     println!("Crawling {}", path);
     let r = walk(Path::new(&path)).unwrap();
+    fn countall(i: &Item) -> u64 {
+        let mut count = 1;
+        for ii in &i.items {
+            count += countall(&ii);
+        }
+        return count;
+    }
+    let count = countall(&r);
     println!(
-        "Total: {} (took {:?})",
+        "Total: {} (count: {}; took {:?})",
         r.total().format_bytes(),
+        count,
         Instant::now().duration_since(crawling_start),
     );
 
@@ -50,7 +59,7 @@ fn main() {
             println!("  / ..");
 
             for i in &current.items {
-                if i.is_dir() {
+                if i.dir {
                     println!(
                         "  / {} {} ({:.2}%)",
                         i.name,
@@ -61,7 +70,7 @@ fn main() {
             }
 
             for i in &current.items {
-                if !i.is_dir() {
+                if !i.dir {
                     println!(
                         "  {} {} ({:.2}%)",
                         i.name,
@@ -97,7 +106,7 @@ fn main() {
         for i in &item.items {
             if i.name == buf {
                 found = true;
-                if i.is_dir() {
+                if i.dir {
                     stack.push(i);
                     print = true;
                 } else {
@@ -145,6 +154,7 @@ fn walk(p: &Path) -> Result<Item, Error> {
         return Ok(Item {
             name,
             size,
+            dir: false,
             items: Vec::new(),
         });
     }
@@ -170,6 +180,7 @@ fn walk(p: &Path) -> Result<Item, Error> {
             return Ok(Item {
                 name,
                 size: 0, // TODO: size,
+                dir: true,
                 items,
             });
         }
@@ -181,6 +192,7 @@ fn walk(p: &Path) -> Result<Item, Error> {
 struct Item {
     name: String,
     size: u64,
+    dir: bool,
     items: Vec<Item>,
 }
 
@@ -191,9 +203,5 @@ impl Item {
             total += i.total();
         }
         return total;
-    }
-
-    fn is_dir(&self) -> bool {
-        return !self.items.is_empty();
     }
 }
