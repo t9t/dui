@@ -7,16 +7,34 @@ use std::{
     time::Instant,
 };
 
+mod write;
+
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        panic!("just 1 argument please");
+    let write_to_file: bool;
+    let write_path: &Path;
+    let crawl_path: &str;
+    if args.len() == 4 {
+        if &args[1] != "-o" {
+            panic!("oopsie");
+        }
+        write_to_file = true;
+        write_path = Path::new(&args[2]);
+        if fs::symlink_metadata(write_path).is_ok() {
+            panic!("{} already exists", &args[2]);
+        }
+        crawl_path = &args[3];
+    } else if args.len() == 2 {
+        write_to_file = false;
+        write_path = Path::new("");
+        crawl_path = &args[1];
+    } else {
+        panic!("incorrect usage");
     }
-    let path = &args[1];
 
     let crawling_start = Instant::now();
-    println!("Crawling {}", path);
-    let r = walk(Path::new(&path)).unwrap();
+    println!("Crawling {}", crawl_path);
+    let r = walk(Path::new(&crawl_path)).unwrap();
     fn countall(i: &Item) -> u64 {
         let mut count = 1;
         for ii in &i.items {
@@ -31,6 +49,11 @@ fn main() {
         count,
         Instant::now().duration_since(crawling_start),
     );
+
+    if write_to_file {
+        write::write(write_path, &r);
+        return;
+    }
 
     let mut full_path = Vec::new();
     full_path.push(r.name.clone());
