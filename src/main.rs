@@ -51,7 +51,7 @@ fn main() {
     );
 
     if write_to_file {
-        write::write(write_path, &r);
+        write::write(write_path, &r).unwrap();
         return;
     }
 
