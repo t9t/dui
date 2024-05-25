@@ -23,7 +23,7 @@ fn main() {
         crawl_path_arg = &args[1];
     } else if args.len() == 3 {
         if &args[1] != "-i" {
-            panic!("oopsie");
+            return print_usage(&args);
         }
         read_from_file = true;
         write_to_file = false;
@@ -31,7 +31,7 @@ fn main() {
         crawl_path_arg = &args[1];
     } else if args.len() == 4 {
         if &args[1] != "-o" {
-            panic!("oopsie");
+            return print_usage(&args);
         }
         read_from_file = false;
         write_to_file = true;
@@ -41,7 +41,7 @@ fn main() {
         }
         crawl_path_arg = &args[3];
     } else {
-        panic!("incorrect usage");
+        return print_usage(&args);
     }
 
     let crawling_start = Instant::now();
@@ -162,6 +162,20 @@ fn main() {
             eprintln!("directory \"{}\" not found", buf);
         }
     }
+}
+
+fn print_usage(args: &Vec<String>) {
+    let cmd = &args[0];
+    println!("Usage:");
+    println!(
+        "    {} <directory>                 crawl and inspect the <directory>",
+        cmd
+    );
+    println!("    {} -o <outfile> <directory>    crawl and inspect the <directory>, and write the report to <outfile>", cmd);
+    println!(
+        "    {} -i <infile>                 read the report from <infile> and inspect",
+        cmd
+    );
 }
 
 fn format_bytes(b: u64) -> String {
