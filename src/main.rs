@@ -13,7 +13,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let write_to_file: bool;
     let write_path: &Path;
-    let crawl_path: &str;
+    let crawl_path_arg: &str;
     if args.len() == 4 {
         if &args[1] != "-o" {
             panic!("oopsie");
@@ -23,18 +23,19 @@ fn main() {
         if fs::symlink_metadata(write_path).is_ok() {
             panic!("{} already exists", &args[2]);
         }
-        crawl_path = &args[3];
+        crawl_path_arg = &args[3];
     } else if args.len() == 2 {
         write_to_file = false;
         write_path = Path::new("");
-        crawl_path = &args[1];
+        crawl_path_arg = &args[1];
     } else {
         panic!("incorrect usage");
     }
 
     let crawling_start = Instant::now();
-    println!("Crawling {}", crawl_path);
-    let r = walk(Path::new(&crawl_path)).unwrap();
+    println!("Crawling {}", crawl_path_arg);
+    let crawl_path_path = Path::new(&crawl_path_arg);
+    let r = walk(crawl_path_path).unwrap();
     fn countall(i: &Item) -> u64 {
         let mut count = 1;
         for ii in &i.items {
@@ -51,7 +52,7 @@ fn main() {
     );
 
     if write_to_file {
-        write::write(write_path, &r).unwrap();
+        write::write(write_path, crawl_path_path, &r).unwrap();
         return;
     }
 
