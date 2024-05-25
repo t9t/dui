@@ -6,7 +6,7 @@ use std::{
 
 use crate::Item;
 
-const MAGIC_SIGNATURE: &[u8; 3] = b"DUI";
+const MAGIC_SIGNATURE: [u8; 3] = *b"DUI";
 const VERSION: [u8; 1] = [1];
 const DIR_CHILDREN_START_MARKER: [u8; 1] = [b'/'];
 const ENTRY_SEPARATOR: [u8; 1] = [0];
@@ -19,7 +19,7 @@ pub(crate) fn write(out_path: &Path, base_path: &Path, entry: &Item) -> Result<(
 
     let mut writer = BufWriter::new(file);
 
-    writer.write_all(MAGIC_SIGNATURE)?;
+    writer.write_all(&MAGIC_SIGNATURE)?;
     writer.write_all(&VERSION)?;
     writer.write_all(&base_path.to_str().unwrap_or("/").as_bytes())?;
     writer.write_all(&ENTRY_SEPARATOR)?;

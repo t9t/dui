@@ -7,35 +7,54 @@ use std::{
     time::Instant,
 };
 
+mod read;
 mod write;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    let read_from_file: bool;
     let write_to_file: bool;
     let write_path: &Path;
     let crawl_path_arg: &str;
-    if args.len() == 4 {
+    if args.len() == 2 {
+        read_from_file = false;
+        write_to_file = false;
+        write_path = Path::new("");
+        crawl_path_arg = &args[1];
+    } else if args.len() == 3 {
+        if &args[1] != "-i" {
+            panic!("oopsie");
+        }
+        read_from_file = true;
+        write_to_file = false;
+        write_path = Path::new(&args[2]);
+        crawl_path_arg = &args[1];
+    } else if args.len() == 4 {
         if &args[1] != "-o" {
             panic!("oopsie");
         }
+        read_from_file = false;
         write_to_file = true;
         write_path = Path::new(&args[2]);
         if fs::symlink_metadata(write_path).is_ok() {
             panic!("{} already exists", &args[2]);
         }
         crawl_path_arg = &args[3];
-    } else if args.len() == 2 {
-        write_to_file = false;
-        write_path = Path::new("");
-        crawl_path_arg = &args[1];
     } else {
         panic!("incorrect usage");
     }
 
     let crawling_start = Instant::now();
-    println!("Crawling {}", crawl_path_arg);
     let crawl_path_path = Path::new(&crawl_path_arg);
-    let r = walk(crawl_path_path).unwrap();
+    let r: Item;
+    if read_from_file {
+        let result = read::read(write_path).unwrap();
+        // TODO: result.0 = base path
+        r = result.1;
+    } else {
+        println!("Crawling {}", crawl_path_arg);
+        r = walk(crawl_path_path).unwrap();
+    }
     fn countall(i: &Item) -> u64 {
         let mut count = 1;
         for ii in &i.items {
